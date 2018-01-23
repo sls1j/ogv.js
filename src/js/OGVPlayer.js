@@ -12,7 +12,7 @@ var OGVLoader = require('./OGVLoader.js'),
 	Bisector = require('./Bisector.js'),
 	extend = require('./extend.js'),
 	OGVMediaError = require('./OGVMediaError.js')
-	OGVMediaType = require('./OGVMediaType.js'),
+OGVMediaType = require('./OGVMediaType.js'),
 	OGVTimeRanges = require('./OGVTimeRanges.js'),
 	OGVWrapperCodec = require('./OGVWrapperCodec.js'),
 	OGVDecoderAudioProxy = require('./OGVDecoderAudioProxy.js'),
@@ -29,6 +29,7 @@ var OGVLoader = require('./OGVLoader.js'),
  *                 'sync': string; A/V sync plan: one of:
  *                     'delay-audio' (pre-1.3.2 behavior) stop audio when behind, then play all frames to catch up
  *                     'skip-frames' (default) to preserve audio, skipping frames until the next sync point (keyframe)
+ * 					'stream' : a stream-file instance, or a stream-file replacement to allow for non-http sources
  */
 function OGVPlayer(options) {
 	options = options || {};
@@ -36,14 +37,15 @@ function OGVPlayer(options) {
 	var instanceId = 'ogvjs' + (++OGVPlayer.instanceCount);
 
 	var codecClass = null,
-		codecType = null;
+		codecType = null,
+		externalStream = null;
 
 	var canvasOptions = {};
 	if (options.webGL !== undefined) {
 		// @fixme confirm format of webGL option
 		canvasOptions.webGL = options.webGL;
 	}
-	if(!!options.forceWebGL) {
+	if (!!options.forceWebGL) {
 		canvasOptions.webGL = 'required';
 	}
 
@@ -70,6 +72,12 @@ function OGVPlayer(options) {
 	if (options.sync === undefined) {
 		options.sync = 'skip-frames';
 	}
+
+	if (typeof options.stream !== 'undefined') {
+		externalStream = options.stream;
+	}
+	else
+		stream = null;
 
 	var State = {
 		INITIAL: 'INITIAL',
@@ -216,7 +224,7 @@ function OGVPlayer(options) {
 		stoppedForLateFrame = false,
 		initialSeekTime = 0.0;
 	function initAudioFeeder() {
-		audioFeeder = new AudioFeeder( audioOptions );
+		audioFeeder = new AudioFeeder(audioOptions);
 		audioFeeder.init(audioInfo.channels, audioInfo.rate);
 
 		// At our requested 8192 buffer size, bufferDuration should be
@@ -251,7 +259,7 @@ function OGVPlayer(options) {
 		// This shouldn't happen if we keep up with onbufferlow, except at
 		// the very beginning of playback when we haven't buffered any data yet.
 		// @todo pre-buffer a little data to avoid needing this
-		audioFeeder.onstarved = function () {
+		audioFeeder.onstarved = function() {
 			if (dataEnded) {
 				// Probably end of file.
 				// Do nothing!
@@ -713,7 +721,7 @@ function OGVPlayer(options) {
 					frameSink.drawFrame(codec.frameBuffer);
 				}
 				finishedSeeking();
-			} );
+			});
 			return;
 		} else {
 			finishedSeeking();
@@ -1051,7 +1059,7 @@ function OGVPlayer(options) {
 		} else if (state == State.PRELOAD) {
 
 			if ((codec.frameReady || !codec.hasVideo) &&
-			    (codec.audioReady || !codec.hasAudio)) {
+				(codec.audioReady || !codec.hasAudio)) {
 
 				state = State.READY;
 				fireEventAsync('loadeddata');
@@ -1693,18 +1701,18 @@ function OGVPlayer(options) {
 		stream.read(1024).then(function(buf) {
 			var hdr = new Uint8Array(buf);
 			if (hdr.length > 4 &&
-				  hdr[0] == 'O'.charAt(0) &&
-				  hdr[1] == 'g'.charAt(0) &&
-				  hdr[2] == 'g'.charAt(0) &&
-				  hdr[3] == 'S'.charAt(0)
+				hdr[0] == 'O'.charAt(0) &&
+				hdr[1] == 'g'.charAt(0) &&
+				hdr[2] == 'g'.charAt(0) &&
+				hdr[3] == 'S'.charAt(0)
 			) {
 				// Ogg stream
 				codecOptions.type = 'video/ogg';
 			} else if (hdr.length > 4 &&
-				         hdr[0] == 0x1a &&
-				         hdr[1] == 0x45 &&
-							   hdr[2] == 0xdf &&
-							   hdr[3] == 0xa3
+				hdr[0] == 0x1a &&
+				hdr[1] == 0x45 &&
+				hdr[2] == 0xdf &&
+				hdr[3] == 0xa3
 			) {
 				// Matroska or WebM
 				codecOptions.type = 'video/webm';
@@ -1733,10 +1741,15 @@ function OGVPlayer(options) {
 
 		function doLoad() {
 			// @todo networkState == NETWORK_LOADING
-			stream = new StreamFile({
-				url: self.src,
-				cacheSize: 16 * 1024 * 1024,
-			});
+			if (null === externalStream) {
+				stream = new StreamFile({
+					url: self.src,
+					cacheSize: 16 * 1024 * 1024,
+				});
+			}
+			else
+				stream = externalStream;
+
 			stream.load().then(function() {
 				loading = false;
 
@@ -2399,6 +2412,17 @@ function OGVPlayer(options) {
 		}
 	});
 
+	/** uptivity - sets the volume (0 -- 1.0) of the specified channel */
+	self.setChannelVolume = function(channel, volume) {
+		/*todo*/
+	}
+
+	/** uptivity - gets the volume (0 -- 1.0) of the specified channel */
+	self.getChannelVolume = function(channel) {
+		/*todo*/
+		return 1.0;
+	}
+
 
 	// Events!
 
@@ -2552,7 +2576,7 @@ function StyleManager() {
 		'position: relative; ' +
 		'-webkit-user-select: none; ' +
 		'-webkit-tap-highlight-color: rgba(0,0,0,0); '
-		'}';
+	'}';
 	document.head.appendChild(el);
 
 	var sheet = el.sheet;
