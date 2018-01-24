@@ -73,11 +73,8 @@ function OGVPlayer(options) {
 		options.sync = 'skip-frames';
 	}
 
-	if (typeof options.stream !== 'undefined') {
-		externalStream = options.stream;
-	}
-	else
-		stream = null;
+	// uptivity -- get custom options to customize the player
+	externalStream = (typeof options.stream !== 'undefined') ? options.stream : null;
 
 	var State = {
 		INITIAL: 'INITIAL',
@@ -225,6 +222,9 @@ function OGVPlayer(options) {
 		initialSeekTime = 0.0;
 	function initAudioFeeder() {
 		audioFeeder = new AudioFeeder(audioOptions);
+		if ( self.onaudiofeedercreated)
+			self.onaudiofeedercreated(audioFeeder);
+			
 		audioFeeder.init(audioInfo.channels, audioInfo.rate);
 
 		// At our requested 8192 buffer size, bufferDuration should be
@@ -1279,7 +1279,7 @@ function OGVPlayer(options) {
 									var videoSyncPadding = (targetPerFrameTime / 1000) * (framePipelineDepth + pendingFrame);
 									var timeToResync = nextKeyframe - videoSyncPadding;
 
-									if (nextKeyframe >= 0 && nextKeyframe != codec.frameTimestamp && playbackPosition  >= timeToResync) {
+									if (nextKeyframe >= 0 && nextKeyframe != codec.frameTimestamp && playbackPosition >= timeToResync) {
 										log('skipping late frame at ' + decodedFrames[0].frameEndTimestamp + ' vs ' + playbackPosition + ', expect to see keyframe at ' + nextKeyframe);
 
 										// First skip any already-decoded frames
@@ -2323,7 +2323,7 @@ function OGVPlayer(options) {
 		},
 
 		/**
-	 	 * @property preload {string}
+		   * @property preload {string}
 		 */
 		"preload": {
 			get: function getPreload() {
@@ -2421,6 +2421,11 @@ function OGVPlayer(options) {
 	self.getChannelVolume = function(channel) {
 		/*todo*/
 		return 1.0;
+	}
+
+	self.getAudioFeeder = function()
+	{
+		return audioFeeder;
 	}
 
 
@@ -2534,6 +2539,10 @@ function OGVPlayer(options) {
 	 * @todo implement
 	 */
 	self.onvolumechange = null;
+	/** 
+	 * Called when the audio feeder is created -- this allows for modifying the instace for special audio processing
+	*/
+	self.onaudiofeedercreated = null;
 
 	return self;
 };
