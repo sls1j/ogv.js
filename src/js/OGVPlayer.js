@@ -222,10 +222,12 @@ function OGVPlayer(options) {
 		initialSeekTime = 0.0;
 	function initAudioFeeder() {
 		audioFeeder = new AudioFeeder(audioOptions);
+		audioFeeder.init(audioInfo.channels, audioInfo.rate);
+		
 		if ( self.onaudiofeedercreated)
 			self.onaudiofeedercreated(audioFeeder);
 			
-		audioFeeder.init(audioInfo.channels, audioInfo.rate);
+		
 
 		// At our requested 8192 buffer size, bufferDuration should be
 		// about 185ms at 44.1 kHz or 170ms at 48 kHz output, covering
