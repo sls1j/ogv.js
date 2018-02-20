@@ -11,7 +11,7 @@
 
     var devicePixelRatio = window.devicePixelRatio || 1;
 
-	var auto = window.WebAssembly ? 'wasm' : 'js';
+	var auto = OGVLoader.wasmSupported() ? 'wasm' : 'js';
 	document.getElementById('auto-select').text += ' (' + auto + ')';
 
     var player;
@@ -176,8 +176,10 @@
                 } else if (ext == 'ogv') {
                     format = 'ogv';
                 } else if (ext == 'oga') {
-                    // uhhhh.
-                    format = 'oga';
+                  // uhhhh.
+                  format = 'oga';
+                } else if (ext == 'opus') {
+                  format = 'opus';
                 } else if (ext == 'webm') {
                     format = 'webm';
                 } else {
@@ -741,6 +743,8 @@
                     return 'Original';
                 } else if (key == 'ogg') {
                     return 'Ogg Vorbis';
+                } else if (key == 'opus') {
+                    return 'Ogg Opus';
                 } else {
                     return key;
                 }
@@ -759,7 +763,7 @@
                 if (source.key == preferredKey) {
                     selected = source;
                 }
-                if (source.format == 'oga' || source.format == 'ogg') {
+                if (source.format == 'oga' || source.format == 'ogg' || source.format == 'opus') {
                     oga = source;
                 }
 

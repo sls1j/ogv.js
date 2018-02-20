@@ -57,7 +57,7 @@ function OGVPlayer(options) {
 
 	// Use the WebAssembly build by default if available;
 	// it should load and compile faster than asm.js.
-	var enableWASM = !!window.WebAssembly;
+	var enableWASM = OGVLoader.wasmSupported();
 	if (typeof options.wasm !== 'undefined') {
 		enableWASM = !!options.wasm;
 	}
